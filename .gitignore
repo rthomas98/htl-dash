@@ -1,0 +1,37 @@
+# Ignore the .env file
+.env
+
+# Ignore vendor directory
+/vendor
+
+# Ignore node_modules directory (if you have one)
+node_modules/
+
+# Ignore Composer lock file (optional, you may want to keep this in some cases)
+composer.lock
+
+# Ignore compiled assets (if any)
+assets/css/*.css
+assets/js/*.js
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore log files and databases
+*.log
+*.sql
+*.sqlite
+
+# Ignore WordPress specific files (if you're developing directly in a WordPress install)
+wp-config.php
+.htaccess
+
+# Ignore other sensitive files
+secret.json
+
+# Ignore any compiled translations
+*.mo
+*.po
+.env
+.env
