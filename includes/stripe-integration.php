@@ -1,44 +1,42 @@
 <?php
 
-// Include the Stripe PHP library
-require_once 'path/to/stripe-php/init.php';
-
 add_action('wp_enqueue_scripts', 'htl_dash_plugin_enqueue_scripts');
 function htl_dash_plugin_enqueue_scripts() {
     wp_enqueue_script('stripe-js', 'https://js.stripe.com/v3/');
-    wp_enqueue_script('htl-dash-js', HTL_DASH_PLUGIN_URL . 'assets/js/script.js', array('jquery', 'stripe-js'), null, true);
 }
 
-// Create a checkout session
-add_action('wp_ajax_create_checkout_session', 'htl_dash_plugin_create_checkout_session');
-add_action('wp_ajax_nopriv_create_checkout_session', 'htl_dash_plugin_create_checkout_session');
-function htl_dash_plugin_create_checkout_session() {
-    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'create_checkout_session')) {
-        wp_send_json_error(['message' => 'Invalid nonce']);
+// Helper function to get the appropriate Stripe API key
+function htl_dash_get_stripe_api_key() {
+    $mode = get_option('htl_dash_stripe_mode', 'test');
+    if ($mode === 'live') {
+        return get_option('htl_dash_stripe_secret_key_live');
+    } else {
+        return get_option('htl_dash_stripe_secret_key_test');
     }
+}
 
-    \Stripe\Stripe::setApiKey('your_stripe_secret_key');
+// Function to check the connection to Stripe
+function htl_dash_check_stripe_connection() {
+    \Stripe\Stripe::setApiKey(htl_dash_get_stripe_api_key());
 
     try {
-        $session = \Stripe\Checkout\Session::create([
-            'payment_method_types' => ['card'],
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => 'usd',
-                    'product_data' => [
-                        'name' => 'Course or Workshop Name',
-                    ],
-                    'unit_amount' => 1000, // Amount in cents
-                ],
-                'quantity' => 1,
-            ]],
-            'mode' => 'payment',
-            'success_url' => site_url('/success'),
-            'cancel_url' => site_url('/cancel'),
-        ]);
-
-        wp_send_json_success(['id' => $session->id]);
+        \Stripe\Account::retrieve();
+        return true;
     } catch (Exception $e) {
-        wp_send_json_error(['message' => $e->getMessage()]);
+        return false;
+    }
+}
+
+// AJAX handler to test the Stripe connection
+add_action('wp_ajax_htl_dash_test_stripe_connection', 'htl_dash_test_stripe_connection');
+function htl_dash_test_stripe_connection() {
+    check_ajax_referer('htl_dash_test_connection', 'nonce');
+
+    if (htl_dash_check_stripe_connection()) {
+        update_option('htl_dash_stripe_connection_status', 'connected');
+        wp_send_json_success(array('message' => __('Connected', 'htl-dash')));
+    } else {
+        update_option('htl_dash_stripe_connection_status', 'error');
+        wp_send_json_error(array('message' => __('Error: Could not connect to Stripe', 'htl-dash')));
     }
 }

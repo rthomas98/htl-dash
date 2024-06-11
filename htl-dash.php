@@ -15,6 +15,9 @@ if (!defined('ABSPATH')) {
 define('HTL_DASH_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('HTL_DASH_PLUGIN_URL', plugin_dir_url(__FILE__));
 
+// Load the Composer autoloader
+require_once HTL_DASH_PLUGIN_PATH . 'vendor/autoload.php';
+
 // Include necessary files
 require_once HTL_DASH_PLUGIN_PATH . 'includes/admin-dashboard.php';
 require_once HTL_DASH_PLUGIN_PATH . 'includes/buyer-dashboard.php';
@@ -24,9 +27,18 @@ require_once HTL_DASH_PLUGIN_PATH . 'includes/class-user-manager.php';
 
 // Load the .env file
 if (file_exists(HTL_DASH_PLUGIN_PATH . '.env')) {
-    require_once HTL_DASH_PLUGIN_PATH . 'vendor/autoload.php';
     $dotenv = Dotenv\Dotenv::createImmutable(HTL_DASH_PLUGIN_PATH);
     $dotenv->load();
+}
+
+// Enqueue scripts
+add_action('admin_enqueue_scripts', 'htl_dash_admin_enqueue_scripts');
+function htl_dash_admin_enqueue_scripts() {
+    wp_enqueue_script('htl-dash-js', HTL_DASH_PLUGIN_URL . 'assets/js/script.js', array('jquery'), null, true);
+    wp_localize_script('htl-dash-js', 'htlDash', array(
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('htl_dash_test_connection')
+    ));
 }
 
 // Activation hook
